@@ -12,12 +12,12 @@ from sklearn.metrics import classification_report, confusion_matrix
 import argparse
 import os
 
-from networks import CNN, ResNet18, ViT
+from models import CNN, ResNet18, ViT
 from train_test_utils import test
 
 def arg_parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--network', type=str, default='cnn')
+    parser.add_argument('--model', type=str, default='vit', choices=['cnn', 'resnet18', 'vit'])
     parser.add_argument('--model-path', type=str, required=True)
     
     parser.add_argument('--batch-size', type=int, default=1024)
@@ -39,14 +39,16 @@ def main():
 
     classes = test_set.classes
 
-    if args.network == 'cnn':
+    if args.model == 'cnn':
         model = CNN(num_classes=len(classes)).to(device)
-    elif args.network == 'resnet18':
+    elif args.model == 'resnet18':
         model = ResNet18(num_classes=len(classes)).to(device)
-    elif args.network == 'vit':
+    elif args.model == 'vit':
         model = ViT(num_classes=len(classes)).to(device)
     else:
-        raise ValueError(f"Unknown network: {args.network}")
+        raise ValueError(f"Unknown model: {args.model}")
+    if not os.path.exists(args.model_path):
+        raise FileNotFoundError(f"Model path {args.model_path} does not exist")
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model = nn.DataParallel(model)
     

@@ -10,41 +10,38 @@ import math
 class CNN(nn.Module):
     def __init__(self, num_classes: int = 10):
         super().__init__()
-        self.in_planes = 64
-        self.conv1 = nn.Conv2d(3, self.in_planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.in_planes)
-        self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self.make_layer(64)
-        self.layer2 = self.make_layer(128, downsample=True)
-        self.layer3 = self.make_layer(256, downsample=True)
-        self.layer4 = self.make_layer(512, downsample=True)
+        self.in_planes = 3
+        self.layer1 = self.make_layer(64, 0.3, downsample=False)
+        self.layer2 = self.make_layer(128, 0.3, downsample=True)
+        self.layer3 = self.make_layer(256, 0.4, downsample=True)
+        self.layer4 = self.make_layer(512, 0.5, downsample=True)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512, num_classes)
+        self.fc = nn.Sequential(
+            nn.Linear(512, 1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(1024, num_classes)
+        )
 
-    def make_layer(self, planes: int, downsample: bool = False) -> nn.Sequential:
+    def make_layer(self, planes: int, dropout: float, downsample: bool) -> nn.Sequential:
         layer = [
             nn.Conv2d(self.in_planes, planes, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(planes),
-            nn.ReLU(),
+            nn.ReLU(inplace=True),
             nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False),
             nn.BatchNorm2d(planes),
-            nn.ReLU()
+            nn.ReLU(inplace=True)
         ]
         if downsample:
-            layer.append(nn.Sequential(
-                nn.MaxPool2d(2, 2)
-            ))
+            layer.append(nn.MaxPool2d(2, 2))
+        layer.append(nn.Dropout(dropout))
         
         self.in_planes = planes
 
         return nn.Sequential(*layer)
 
     def forward(self, x: Tensor) -> Tensor: # (B, C, H, W)
-        out = self.conv1(x) # (B, 64, H, W)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.layer1(out) # (B, 64, H, W)
+        out = self.layer1(x) # (B, 64, H, W)
         out = self.layer2(out) # (B, 128, H, W)
         out = self.layer3(out) # (B, 256, H, W)
         out = self.layer4(out) # (B, 512, H, W)
