@@ -10,9 +10,9 @@ def sl_batch_log(step, loss, optimizer, log_freq):
             "train/lr": optimizer.param_groups[0]['lr'],
         })
 
-def sl_epoch_log(epoch, epochs, train_loss, train_acc, val_loss, val_acc):
-    print(f"epoch [{epoch:2}/{epochs}] train_loss {train_loss:.4f} train_acc {train_acc:.2f}%")
-    print(f"epoch [{epoch:2}/{epochs}] val_loss {val_loss:.4f} val_acc {val_acc:.2f}%")
+def sl_epoch_log(epoch, train_loss, train_acc, val_loss, val_acc, num_epochs):
+    print(f"epoch [{epoch:2}/{num_epochs}] train_loss {train_loss:.4f} train_acc {train_acc:.2f}%")
+    print(f"epoch [{epoch:2}/{num_epochs}] val_loss {val_loss:.4f} val_acc {val_acc:.2f}%")
     
     wandb.log({
         "train/epoch_loss": train_loss,
@@ -22,7 +22,7 @@ def sl_epoch_log(epoch, epochs, train_loss, train_acc, val_loss, val_acc):
         "epoch": epoch
     })
 
-def sl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_freq):
+def sl_train(epoch, model, loader, criterion, optimizer, scheduler, device, log_freq):
     model.train()
     
     total_loss = 0
@@ -52,7 +52,7 @@ def sl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_
     acc = 100. * correct / total
     return avg_loss, acc
 
-def sl_validate(epoch, loader, device, model, criterion):
+def sl_validate(epoch, model, loader, criterion, device):
     model.eval()
     
     total_loss = 0
@@ -76,18 +76,18 @@ def sl_validate(epoch, loader, device, model, criterion):
     return avg_loss, acc
 
 class EarlyStopper:
-    def __init__(self, model, model_dir, patience, min_delta):
+    def __init__(self, model, model_path, patience, min_delta):
         self.patience = patience
         self.min_delta = min_delta
         self.model = model
-        self.model_dir = model_dir
+        self.model_path = model_path
         self.counter = 0
         self.min_val_loss = float('inf')
 
     def early_stop(self, val_loss):
         if val_loss < self.min_val_loss:
             print(f'best_val_loss {val_loss:.4f}, save model!')
-            torch.save(self.model.module.state_dict(), self.model_dir)
+            torch.save(self.model.module.state_dict(), self.model_path)
             self.min_val_loss = val_loss
             self.counter = 0
         elif val_loss > (self.min_val_loss + self.min_delta):
