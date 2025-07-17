@@ -12,7 +12,7 @@ class CNN(nn.Module):
         super().__init__()
         self.in_planes = 3
         self.layer1 = self.make_layer(64, 0.3, downsample=False)
-        self.layer2 = self.make_layer(128, 0.3, downsample=True)
+        self.layer2 = self.make_layer(128, 0.4, downsample=True)
         self.layer3 = self.make_layer(256, 0.4, downsample=True)
         self.layer4 = self.make_layer(512, 0.5, downsample=True)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))

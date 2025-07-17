@@ -18,13 +18,13 @@ def parse_args():
     parser.add_argument('--batch-size', type=int, default=1024)
     parser.add_argument('--num-workers', type=int, default=4)
 
-    parser.add_argument('--model', type=str, default='vit', choices=['cnn', 'resnet18', 'vit'])
+    parser.add_argument('--model', type=str, default='cnn', choices=['cnn', 'resnet18', 'vit'])
     
     parser.add_argument('--learning-rate', type=float, default=3e-4)
     parser.add_argument('--weight-decay', type=float, default=1e-4)
 
     parser.add_argument('--cosine-annealing', action='store_true')
-    parser.add_argument('--num-epochs', type=int, default=500)
+    parser.add_argument('--num-epochs', type=int, default=200)
     parser.add_argument('--early-stop', action='store_true')
     parser.add_argument('--patience', type=int, default=5)
     parser.add_argument('--min-delta', type=float, default=0.3)
