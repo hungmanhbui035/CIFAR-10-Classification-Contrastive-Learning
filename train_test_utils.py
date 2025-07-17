@@ -96,7 +96,7 @@ class EarlyStopper:
                 return True
         return False
 
-def test(loader, device, model, criterion):
+def test(model, loader, criterion, device):
     model.eval()
     
     total_loss = 0
@@ -128,7 +128,7 @@ def test(loader, device, model, criterion):
     
     return avg_loss, acc, y_true, y_pred
 
-def cl_batch_log(step, log_freq, loss, optimizer):
+def cl_batch_log(step, loss, optimizer, log_freq):
     if step % log_freq == 0:
         wandb.log({
             "train/loss": loss,
@@ -136,7 +136,7 @@ def cl_batch_log(step, log_freq, loss, optimizer):
         })
 
 
-def cl_epoch_log(epoch, num_epochs, train_loss):
+def cl_epoch_log(epoch, train_loss, num_epochs):
     print(f"epoch [{epoch:2}/{num_epochs}] train_loss {train_loss:.4f}")
     
     wandb.log({
@@ -144,7 +144,7 @@ def cl_epoch_log(epoch, num_epochs, train_loss):
         "epoch": epoch
     })
 
-def cl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_freq):
+def cl_train(epoch, model, loader, criterion, optimizer, scheduler, device, log_freq):
     model.train()
     
     total_loss = 0
@@ -163,7 +163,7 @@ def cl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_
         total_loss += loss.item() * images.size(0)
         total += images.size(0)
 
-        cl_batch_log(step, log_freq, loss.item(), optimizer)
+        cl_batch_log(step, loss.item(), optimizer, log_freq)
 
     if scheduler:
         scheduler.step()
@@ -171,7 +171,7 @@ def cl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_
     avg_loss = total_loss / total
     return avg_loss
 
-def hcl_train(epoch, loader, device, model, criterion, optimizer, scheduler, log_freq):
+def hcl_train(epoch, model, loader, criterion, optimizer, scheduler, device, log_freq):
     model.train()
     
     total_loss = 0

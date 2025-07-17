@@ -6,11 +6,11 @@ import argparse
 import os
 from PIL import Image
 
-from networks import CNN, ResNet18, ViT
+from models import CNN, ResNet18, ViT
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--network', type=str, default='cnn')
+    parser.add_argument('--model', type=str, default='cnn', choices=['cnn', 'resnet18', 'vit'])
     parser.add_argument('--model-path', type=str, required=True)
     parser.add_argument('--image-path', type=str, required=True)
     return parser.parse_args()
@@ -32,18 +32,18 @@ def main():
     if not os.path.exists(args.image_path):
         raise FileNotFoundError(f"Image not found at {args.image_path}")
     image = Image.open(args.image_path)
-    image_tensor = transform(image)
+    image_tensor = transform(image).to(device)
     
     if not os.path.exists(args.model_path):
         raise FileNotFoundError(f"Model not found at {args.model_path}")
-    if args.network == 'cnn':
+    if args.model == 'cnn':
         model = CNN(num_classes=10).to(device)
-    elif args.network == 'resnet18':
+    elif args.model == 'resnet18':
         model = ResNet18(num_classes=10).to(device)
-    elif args.network == 'vit':
+    elif args.model == 'vit':
         model = ViT(num_classes=10).to(device)
     else:
-        raise ValueError(f"Unknown network: {args.network}")
+        raise ValueError(f"Unknown model: {args.model}")
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 

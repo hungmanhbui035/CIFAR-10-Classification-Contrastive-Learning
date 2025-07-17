@@ -54,11 +54,13 @@ def main():
     
     criterion = nn.CrossEntropyLoss()
 
-    test_loss, test_acc, y_true, y_pred = test(loader, device, model, criterion)
+    test_loss, test_acc, y_true, y_pred = test(model, loader, criterion, device)
     print(f"\ntest_loss {test_loss:.4f} test acc {test_acc:.2f}%")
 
     print(f"\n{classification_report(y_true, y_pred)}")
 
+    if not os.path.exists('./cm'):
+        os.makedirs('./cm')
     cm = confusion_matrix(y_true, y_pred)
     cm_df = pd.DataFrame(cm, index=classes, columns=classes)
     plt.figure(figsize=(10, 8))
@@ -66,6 +68,7 @@ def main():
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title('Confusion Matrix')
+    plt.savefig(f'./cm/{args.model}.png')
     plt.show()
 
 if __name__ == '__main__':

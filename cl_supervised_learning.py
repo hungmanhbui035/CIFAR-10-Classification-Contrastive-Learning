@@ -19,6 +19,8 @@ def parse_args():
     parser.add_argument('--num-workers', type=int, default=4)
 
     parser.add_argument('--model', type=str, default='cnn', choices=['cnn', 'resnet18', 'vit'])
+    parser.add_argument('--projection-dim', type=int, default=128)
+    parser.add_argument('--model-path', type=str, required=True)
     parser.add_argument('--ckpt-path', type=str, default=None)
     
     parser.add_argument('--learning-rate', type=float, default=3e-4)
@@ -66,12 +68,25 @@ def main():
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True)
 
     # model
+    if not args.model_path:
+        raise ValueError('model_path is required')
     if args.model == 'cnn':
-        model = CNN(num_classes=10).to(device)
+        model = CNN(num_classes=args.projection_dim).to(device)
+        model.load_state_dict(torch.load(args.model_path, map_location=device))
+        model.fc = nn.Sequential(
+            nn.Linear(512, 1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(1024, 10),
+        )
     elif args.model == 'resnet18':
-        model = ResNet18(num_classes=10).to(device)
+        model = ResNet18(num_classes=args.projection_dim).to(device)
+        model.load_state_dict(torch.load(args.model_path, map_location=device))
+        model.fc = nn.Linear(512, 10).to(device)
     elif args.model == 'vit':
-        model = ViT(num_classes=10).to(device)
+        model = ViT(num_classes=args.projection_dim).to(device)
+        model.load_state_dict(torch.load(args.model_path, map_location=device))
+        model.fc = nn.Linear(256, 10).to(device)
     else:
         raise ValueError(f"Unknown model: {args.model}")
     model = nn.DataParallel(model)
@@ -81,7 +96,11 @@ def main():
     model_path = f'./models/sl_{args.model}.pth'
     
     # optimizer, criterion, scheduler and early_stopper
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    for param in model.parameters():
+        param.requires_grad = False
+    for param in model.module.fc.parameters():
+        param.requires_grad = True
+    optimizer = optim.Adam(model.module.fc.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     criterion = nn.CrossEntropyLoss()
     if args.cosine_annealing:
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.num_epochs)

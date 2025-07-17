@@ -6,12 +6,12 @@ from torch.utils.data import DataLoader
 import argparse
 import os
 
-from networks import CNN, ResNet18, ViT
+from models import CNN, ResNet18, ViT
 from data_utils import get_misclassified_images, save_misclassified_images
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--network', type=str, default='cnn')
+    parser.add_argument('--model', type=str, default='cnn', choices=['cnn', 'resnet18', 'vit'])
     parser.add_argument('--model-path', type=str, required=True)
     parser.add_argument('--dataset', type=str, default='test')
 
@@ -41,14 +41,14 @@ def main():
 
     if not os.path.exists(args.model_path):
         raise FileNotFoundError(f"Model not found at {args.model_path}")
-    if args.network == 'cnn':
+    if args.model == 'cnn':
         model = CNN(num_classes=10).to(device)
-    elif args.network == 'resnet18':
+    elif args.model == 'resnet18':
         model = ResNet18(num_classes=10).to(device)
-    elif args.network == 'vit':
+    elif args.model == 'vit':
         model = ViT(num_classes=10).to(device)
     else:
-        raise ValueError(f"Unknown network: {args.network}")
+        raise ValueError(f"Unknown model: {args.model}")
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model.eval()
 
@@ -63,7 +63,7 @@ def main():
 
     misclassified_dict = get_misclassified_images(model, loader, pil_transform)
 
-    save_misclassified_images(misclassified_dict, save_dir=f'./misclassified/{args.network}_{args.dataset}')
+    save_misclassified_images(misclassified_dict, save_dir=f'./misclassified/{args.model}_{args.dataset}')
 
 if __name__ == '__main__':
     main()
