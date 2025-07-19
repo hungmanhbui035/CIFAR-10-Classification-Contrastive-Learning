@@ -98,7 +98,7 @@ def main():
         train_loss = cl_train(epoch, model, loader, criterion, optimizer, scheduler, device, args.log_freq)
         cl_epoch_log(epoch, train_loss, args.num_epochs)
 
-        if epoch % 50 == 0:
+        if epoch % 100 == 0:
             ckpt = {
                 'epoch': epoch,
                 'model': model.module.state_dict(),

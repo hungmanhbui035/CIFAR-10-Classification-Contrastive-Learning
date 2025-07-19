@@ -140,7 +140,7 @@ def main():
         train_loss = hcl_train(epoch, model, hardneg_loader, criterion, optimizer, scheduler, device, args.log_freq)
         cl_epoch_log(epoch, train_loss, args.num_epochs)
     
-        if epoch % 50 == 0:
+        if epoch % 10 == 0:
             ckpt = {
                 'epoch': epoch,
                 'model': model.module.state_dict(),
