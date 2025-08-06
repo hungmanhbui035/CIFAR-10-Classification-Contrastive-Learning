@@ -25,14 +25,14 @@ class TransformedDataset(Dataset):
         return self.transform(x), y
 
 class HardNegContrastiveDataset(Dataset):
-    def __init__(self, dataset, pos_transform, hardneg_transform, hardneg_dict, num_hardnegs, num_randoms, random_transform):
+    def __init__(self, dataset, pos_transform, hardneg_transform, num_hardnegs, random_transform, num_randoms, hardneg_dict):
         self.dataset = dataset
         self.pos_transform = pos_transform
         self.hardneg_transform = hardneg_transform
-        self.hardneg_dict = hardneg_dict
         self.num_hardnegs = num_hardnegs
-        self.num_randoms = num_randoms
         self.random_transform = random_transform
+        self.num_randoms = num_randoms
+        self.hardneg_dict = hardneg_dict
 
     def __len__(self):
         return len(self.dataset)
@@ -84,7 +84,6 @@ class HardNegContrastiveDataset(Dataset):
 
         x = torch.cat([pos_imgs, hard_neg_imgs, random_imgs], dim=0)
         y = torch.cat([pos_label, hard_neg_labels, random_labels], dim=0)
-
         return x, y
     
 def train_val_split(dataset, val_ratio):
@@ -115,7 +114,6 @@ def get_misclassified_images(model, loader, pil_transform):
         if pred_label.item() not in misclassified_dict:
             misclassified_dict[pred_label.item()] = []
         misclassified_dict[pred_label.item()].append((pil_transform(img), true_label.item()))
-
     return misclassified_dict
 
 def save_misclassified_images(misclassified_dict, save_dir):

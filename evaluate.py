@@ -12,46 +12,52 @@ from sklearn.metrics import classification_report, confusion_matrix
 import argparse
 import os
 
-from models import CNN, ResNet18, ViT
-from train_test_utils import test
+from utils.train_utils import test
+from networks.cnn import CNN
+from networks.resnet18 import ResNet18
+from networks.vit import ViT
 
 def arg_parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str, default='vit', choices=['cnn', 'resnet18', 'vit'])
+    parser.add_argument('--model', type=str, default='cnn', choices=['cnn', 'resnet18', 'vit'])
     parser.add_argument('--model-path', type=str, required=True)
     
-    parser.add_argument('--batch-size', type=int, default=1024)
-    parser.add_argument('--num-workers', type=int, default=4)
+    parser.add_argument('--bs', type=int, default=1024)
+    parser.add_argument('--workers', type=int, default=4)
     return parser.parse_args()
 
 def main():
     args = arg_parse()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
-
+    
+    # data
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.4914, 0.4822, 0.4465], std=[0.2023, 0.1994, 0.2010])
     ])
 
     test_set = datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-    loader = DataLoader(test_set, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True)
+    loader = DataLoader(test_set, batch_size=args.bs, shuffle=False, num_workers=args.workers, pin_memory=True)
 
     classes = test_set.classes
 
+    # model
     if args.model == 'cnn':
-        model = CNN(num_classes=len(classes)).to(device)
+        model = CNN(out_dim=len(classes))
     elif args.model == 'resnet18':
-        model = ResNet18(num_classes=len(classes)).to(device)
+        model = ResNet18(out_dim=len(classes))
     elif args.model == 'vit':
-        model = ViT(num_classes=len(classes)).to(device)
-    else:
-        raise ValueError(f"Unknown model: {args.model}")
+        model = ViT(out_dim=len(classes))
+
     if not os.path.exists(args.model_path):
         raise FileNotFoundError(f"Model path {args.model_path} does not exist")
+    
+    model = model.to(device)
     model.load_state_dict(torch.load(args.model_path, map_location=device))
     model = nn.DataParallel(model)
     
+    # test
     criterion = nn.CrossEntropyLoss()
 
     test_loss, test_acc, y_true, y_pred = test(model, loader, criterion, device)
@@ -68,8 +74,8 @@ def main():
     plt.xlabel('Predicted')
     plt.ylabel('True')
     plt.title('Confusion Matrix')
-    plt.savefig(f'./cm/{args.model}.png')
     plt.show()
+    plt.savefig(f'./cm/{args.model}.png')
 
 if __name__ == '__main__':
     main()

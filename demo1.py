@@ -6,7 +6,9 @@ import argparse
 import os
 from PIL import Image
 
-from models import CNN, ResNet18, ViT
+from networks.cnn import CNN
+from networks.resnet18 import ResNet18
+from networks.vit import ViT
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -20,8 +22,7 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
-           'dog', 'frog', 'horse', 'ship', 'truck']
+    classes = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 
     transform = transforms.Compose([
         transforms.Resize((32, 32)),
@@ -31,22 +32,23 @@ def main():
 
     if not os.path.exists(args.image_path):
         raise FileNotFoundError(f"Image not found at {args.image_path}")
+    
     image = Image.open(args.image_path)
     image_tensor = transform(image).to(device)
     
     if not os.path.exists(args.model_path):
         raise FileNotFoundError(f"Model not found at {args.model_path}")
+    
     if args.model == 'cnn':
-        model = CNN(num_classes=10).to(device)
+        model = CNN(out_dim=len(classes))
     elif args.model == 'resnet18':
-        model = ResNet18(num_classes=10).to(device)
+        model = ResNet18(out_dim=len(classes))
     elif args.model == 'vit':
-        model = ViT(num_classes=10).to(device)
-    else:
-        raise ValueError(f"Unknown model: {args.model}")
+        model = ViT(out_dim=len(classes))
+    model = model.to(device)
     model.load_state_dict(torch.load(args.model_path, map_location=device))
+    
     model.eval()
-
     with torch.no_grad():
         output = model(image_tensor.unsqueeze(0))
         probabilities = F.softmax(output, dim=1)
